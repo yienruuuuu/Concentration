@@ -1,3 +1,9 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Segoe UI', sans-serif;
   line-height: 1.5;
@@ -16,11 +22,8 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  justify-content: center;
 }
 
 #root {
@@ -29,6 +32,7 @@ body {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,12 +182,9 @@ button:active {
 }
 
 @media (max-width: 600px) {
-  body {
-    align-items: flex-start;
-  }
-
   #root {
     padding: 1.25rem;
+    justify-content: center;
   }
 
   .card {

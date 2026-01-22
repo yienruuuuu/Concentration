@@ -10,6 +10,7 @@ import {
     Legend
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
+import qrImageUrl from '../assets/qr.png'
 
 ChartJS.register(
     CategoryScale,
@@ -23,6 +24,7 @@ ChartJS.register(
 
 const SHARE_WIDTH = 1200
 const SHARE_HEIGHT = 675
+const QR_SIZE = 140
 const backgroundModules = import.meta.glob('../assets/share-backgrounds/*.{png,jpg,jpeg,webp}', {
     eager: true,
     import: 'default'
@@ -40,16 +42,17 @@ export default function Results({ data, onRestart, nickname, duration }) {
     const avgResponseTime = total > 0 ? (data.reduce((a, b) => a + b.responseTime, 0) / total).toFixed(0) : 0
     const displayName = nickname && nickname.trim() ? nickname.trim() : '玩家'
 
+    const chartSource = data.filter((item, index) => !(index === 0 && item.responseTime === 0))
     const chartData = {
-        labels: data.map(d => Math.round(d.timeOffset / 1000)),
+        labels: chartSource.map(d => Math.round(d.timeOffset / 1000)),
         datasets: [
             {
                 label: '反應時間（ms）',
-                data: data.map(d => d.responseTime),
+                data: chartSource.map(d => d.responseTime),
                 borderColor: '#647eff',
                 backgroundColor: 'rgba(100, 126, 255, 0.5)',
-                pointBackgroundColor: data.map(d => d.correct ? '#4ade80' : '#ef4444'),
-                pointBorderColor: data.map(d => d.correct ? '#4ade80' : '#ef4444'),
+                pointBackgroundColor: chartSource.map(d => d.correct ? '#4ade80' : '#ef4444'),
+                pointBorderColor: chartSource.map(d => d.correct ? '#4ade80' : '#ef4444'),
                 pointRadius: 6,
                 tension: 0.3
             }
@@ -84,7 +87,7 @@ export default function Results({ data, onRestart, nickname, duration }) {
             tooltip: {
                 callbacks: {
                     label: (context) => {
-                        const d = data[context.dataIndex];
+                        const d = chartSource[context.dataIndex];
                         return `反應時間：${d.responseTime}ms（${d.correct ? '正確' : '錯誤'}）`;
                     }
                 }
@@ -94,7 +97,6 @@ export default function Results({ data, onRestart, nickname, duration }) {
 
     const handleShare = async () => {
         setShareError('')
-        setShareImageUrl('')
         if (backgroundUrls.length === 0) {
             setShareError('請先放入分享背景圖')
             return
@@ -102,13 +104,16 @@ export default function Results({ data, onRestart, nickname, duration }) {
 
         setIsSharing(true)
         try {
-            const bgUrl = backgroundUrls[Math.floor(Math.random() * backgroundUrls.length)]
-            const image = await new Promise((resolve, reject) => {
+            const loadImage = (src) => new Promise((resolve, reject) => {
                 const img = new Image()
                 img.onload = () => resolve(img)
                 img.onerror = () => reject(new Error('load-failed'))
-                img.src = bgUrl
+                img.src = src
             })
+
+            const bgUrl = backgroundUrls[Math.floor(Math.random() * backgroundUrls.length)]
+            const image = await loadImage(bgUrl)
+            const qrImage = await loadImage(qrImageUrl)
 
             const canvas = document.createElement('canvas')
             canvas.width = SHARE_WIDTH
@@ -144,6 +149,15 @@ export default function Results({ data, onRestart, nickname, duration }) {
             ctx.fillText(`數字比較 ${duration} 秒挑戰`, 90, SHARE_HEIGHT - 100)
             ctx.font = '20px "Segoe UI", "Noto Sans TC", sans-serif'
             ctx.fillText('https://concentration-yienruuuuu.pages.dev/', 90, SHARE_HEIGHT - 60)
+
+            const qrX = 90
+            const qrY = SHARE_HEIGHT - 100 - QR_SIZE - 20
+            ctx.save()
+            ctx.shadowColor = 'rgba(15, 23, 42, 0.6)'
+            ctx.shadowBlur = 12
+            ctx.shadowOffsetY = 4
+            ctx.drawImage(qrImage, qrX, qrY, QR_SIZE, QR_SIZE)
+            ctx.restore()
 
             const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
             if (!blob) throw new Error('export-failed')
