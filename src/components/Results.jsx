@@ -159,11 +159,10 @@ export default function Results({ data, onRestart, nickname, duration }) {
             ctx.drawImage(qrImage, qrX, qrY, QR_SIZE, QR_SIZE)
             ctx.restore()
 
-            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
-            if (!blob) throw new Error('export-failed')
+            const dataUrl = canvas.toDataURL('image/png')
+            if (!dataUrl) throw new Error('export-failed')
 
-            const url = URL.createObjectURL(blob)
-            setShareImageUrl(url)
+            setShareImageUrl(dataUrl)
         } catch (err) {
             setShareError('產生分享圖失敗，請再試一次')
         } finally {
@@ -183,7 +182,7 @@ export default function Results({ data, onRestart, nickname, duration }) {
 
     useEffect(() => {
         return () => {
-            if (shareImageUrl) {
+            if (shareImageUrl && shareImageUrl.startsWith('blob:')) {
                 URL.revokeObjectURL(shareImageUrl)
             }
         }
